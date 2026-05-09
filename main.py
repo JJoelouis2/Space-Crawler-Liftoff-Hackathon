@@ -44,13 +44,14 @@ def blit_images(window):
     screen.blit(stats_panel, (0, 400))
     screen.blit(Pot1, )
 """
-
+# constants
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-stats_panel = pygame.Surface((800,200))
-stats_panel.fill((255,0,0))
+
+table = pygame.transform.scale(pygame.image.load(r"assets\table.png"), (800, 200))
+
 
 hand = Hand((50), 0)
 pot1 = Pot(0, 1)
@@ -76,13 +77,13 @@ while running:
     
     screen.fill((0, 0, 0))
     hand.update()
-
-    screen.blit(hand.image, hand.pos)
-    screen.blit(stats_panel, (0, 400))
+    
+    screen.blit(table, (0, 400))
     screen.blit(pot1.image, [pot1.rect.x, pot1.rect.bottom])
     screen.blit(pot2.image, [pot2.rect.x, pot2.rect.bottom])
     screen.blit(pot3.image, [pot3.rect.x, pot3.rect.bottom])
-    
+    screen.blit(hand.image, hand.pos)
+
     pygame.display.flip()
     
 pygame.quit()

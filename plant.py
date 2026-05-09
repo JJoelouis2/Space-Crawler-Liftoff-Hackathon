@@ -6,13 +6,16 @@ class Pot(pygame.sprite.Sprite):
         super().__init__()
         # Initializes Image
         self.image = pygame.image.load("assets\PotStage0.png")
+        self.image = pygame.transform.scale(self.image, (150, 150))
+
         random.randint = ()
         self.rect = self.image.get_rect()
 
 
         # Starting Position
         self.potNumber = potNumber
-        potNumberDict = {1:[100, 100], 2:[300, 100], 3:[500, 100]}
+        height = 300
+        potNumberDict = {1:[80, height], 2:[315, height], 3:[540, height]}
         potPosition = potNumberDict[potNumber]
         self.rect.x = potPosition[0]
         self.rect.bottom = potPosition[1]
