@@ -1,1 +1,0 @@
-# Space-Crawler-Liftoff-Hackathon
