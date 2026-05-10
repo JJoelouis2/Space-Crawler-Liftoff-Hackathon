@@ -7,12 +7,9 @@ from pygame.locals import USEREVENT
 import time
 
 pygame.init()
-
-pygame.mixer.music.load(r"assets\main_theme.mp3")
-pygame.mixer.music.play(-1)
-
+pygame.mixer.init()
 pygame.display.set_caption("Crybabies Garden")
-
+print("Mixer init:", pygame.mixer.get_init())
 from pygame.locals import (
     K_UP, # up arrow
     K_DOWN, # down arrow
@@ -23,7 +20,6 @@ from pygame.locals import (
     QUIT, # X button pressed
     MOUSEBUTTONDOWN,
 )
-
 
 # constants
 SCREEN_WIDTH = 800
@@ -36,11 +32,9 @@ clock = pygame.time.Clock()
 jumpscare_active = False
 jumpscare_start = 0
 
-
 # Shake stats
 shake_active = False
 shake_start = 0
-
 
 # Background flash stats
 bg_flash_active = False
@@ -69,6 +63,10 @@ BLACKOUT_SCARE_THRESHOLD = 11
 BLACKOUT_RNG_TARGET = 6
 BLACKOUT_SPIDER_COUNT_MIN = 4
 BLACKOUT_SPIDER_COUNT_MAX = 7
+
+# High-scare planting chance
+SCARY_PLANT_SCARE_THRESHOLD = 0
+SCARY_PLANT_CHANCE = 0.95
 
 class Spider:
     def __init__(self):
@@ -223,6 +221,22 @@ def trigger_blackout():
         )
         blackout_spiders.append(swarm_spider)
 
+def apply_mad_growth_if_ready(plant):
+    if not getattr(plant, "mad_growth_pending", False) or plant.stage < 2:
+        return
+
+    if isinstance(plant, Venus):
+        plant.image = pygame.image.load(r"assets\venus\venusmad.png")
+        plant.image = pygame.transform.scale(plant.image, (120, 140))
+    elif isinstance(plant, Cactus):
+        plant.image = pygame.image.load(r"assets\cactus\cactusmad.png")
+        plant.image = pygame.transform.scale(plant.image, (100, 180))
+    elif isinstance(plant, Flower):
+        plant.image = pygame.image.load(r"assets\flower\flowermad.png")
+        plant.image = pygame.transform.scale(plant.image, (80, 220))
+
+    plant.mad_growth_pending = False
+
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 background = pygame.transform.scale(
@@ -286,11 +300,11 @@ dark_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 dark_overlay.fill((0, 0, 0))
 
 # Durations
-JUMPSCARE_DURATION = 0.5 * (1 + hand.scareMeter)  # seconds
-SHAKE_DURATION = 2.0 * (1 + hand.scareMeter) # seconds
-BG_FLASH_DURATION = 2.0 * (1 + hand.scareMeter) # seconds
-GLITCH_DURATION = 0.45 * (1 + hand.scareMeter) # seconds
-BLACKOUT_DURATION = 2.5 * (1 + hand.scareMeter)  # seconds
+JUMPSCARE_DURATION = 0.5 * (1 + hand.scareMeter/10)  # seconds
+SHAKE_DURATION = 2.0 * (1 + hand.scareMeter/10) # seconds
+BG_FLASH_DURATION = 2.0 * (1 + hand.scareMeter/10) # seconds
+GLITCH_DURATION = 0.45 * (1 + hand.scareMeter/10) # seconds
+BLACKOUT_DURATION = 2.5 * (1 + hand.scareMeter/10)  # seconds
 
 
 running = True
@@ -320,6 +334,7 @@ while running:
                         if venus_needs_spider[plant.potNumber - 1]:
                             continue
                     plant.stageChange()
+                    apply_mad_growth_if_ready(plant)
                     if plant.stage < 2:
                         plant.watered = False
 
@@ -375,13 +390,13 @@ while running:
             ):
                 trigger_blackout()
 
-            elif hand.scareMeter >= 7 and scareRng == 1 and not tableChange:
+            elif hand.scareMeter >= 3 and scareRng == 1 and not tableChange:
                 table = pygame.transform.scale(pygame.image.load(r"assets\table\table2.png"), (800, 200))
                 # Screen Shaking
                 trigger_shake() 
                 tableChange = True
 
-            if hand.scareMeter >= 7 and scareRng == 3 and not jumpscare_active:
+            if hand.scareMeter >= 5 and scareRng == 3 and not jumpscare_active:
                 # Jumpscare state 5, 3
                 trigger_jumpscare()
 
@@ -436,6 +451,7 @@ while running:
                     ):
                         venus_needs_spider[spider_target_pot] = False
                         target_plant.stageChange()
+                        apply_mad_growth_if_ready(target_plant)
                         carrying_spider = False
                         spider_target_pot = None
                         hand.set_mode("default")
@@ -473,6 +489,10 @@ while running:
                     # Hand is touching pot
                     if pot[0].rect.collidepoint(pygame.mouse.get_pos()) and not pot[1]:
                         plant = random.randint(1, 3)
+                        scary_spawn = (
+                            hand.scareMeter >= SCARY_PLANT_SCARE_THRESHOLD
+                            and random.random() < SCARY_PLANT_CHANCE
+                        )
                         pot_number = pot[2]
                         pot[1] = True
 
@@ -480,19 +500,22 @@ while running:
                         if plant == 1:
                             new_plant = Venus(0, pot_number + 1)
                             new_plant.watered = False
+                            new_plant.mad_growth_pending = scary_spawn
                             plant_list[pot_number] = new_plant
-                            hand.scareMeter += 3
+                            hand.scareMeter += 1
                             
                         # Add Cactus
                         elif plant == 2:
                             new_plant = Cactus(0, pot_number + 1)
                             new_plant.watered = False
+                            new_plant.mad_growth_pending = scary_spawn
                             plant_list[pot_number] = new_plant
 
                         # Add flower
                         else:
                             new_plant = Flower(0, pot_number + 1)
                             new_plant.watered = False
+                            new_plant.mad_growth_pending = scary_spawn
                             plant_list[pot_number] = new_plant
 
                 # Harvesting plants
@@ -517,7 +540,7 @@ while running:
                                 hand.scareMeter += 1
 
                                 # Adds scaling
-                                tickScaling = max(200, int(1000 - 1000 * (hand.scareMeter)/20)) # Scales the tick speed based on scare meter
+                                tickScaling = max(350, int(1000 - 1000 * (hand.scareMeter)/20)) # Scales the tick speed based on scare meter
                                 pygame.time.set_timer(SCARY_TICK, tickScaling)  # every 1000 ms push one event              
                 
     if shake_active:
