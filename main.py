@@ -7,9 +7,11 @@ from pygame.locals import USEREVENT
 import time
 
 pygame.init()
-pygame.mixer.init()
+
 pygame.display.set_caption("Crybabies Garden")
-print("Mixer init:", pygame.mixer.get_init())
+
+pygame.mixer.music.load(r"assets\main_theme.mp3")
+pygame.mixer.music.play(-1)
 from pygame.locals import (
     K_UP, # up arrow
     K_DOWN, # down arrow
@@ -364,7 +366,7 @@ while running:
 
             scareRng = random.randint(1, 10)
             if (
-                hand.scareMeter >= 8
+                hand.scareMeter >= 7
                 and scareRng ==6
                 and not bg_flash_active
             ):
@@ -376,7 +378,7 @@ while running:
                 )
             
             elif (
-                hand.scareMeter >= 10
+                hand.scareMeter >= 5
                 and scareRng == 7
                 and not glitch_active
             ):
@@ -384,19 +386,19 @@ while running:
                 glitch_start = time.time()
 
             elif (
-                hand.scareMeter >= 8
+                hand.scareMeter >= 10
                 and scareRng == BLACKOUT_RNG_TARGET
                 and not blackout_active
             ):
                 trigger_blackout()
 
-            elif hand.scareMeter >= 3 and scareRng == 1 and not tableChange:
+            elif hand.scareMeter >= 5 and scareRng == 1 and not tableChange:
                 table = pygame.transform.scale(pygame.image.load(r"assets\table\table2.png"), (800, 200))
                 # Screen Shaking
                 trigger_shake() 
                 tableChange = True
 
-            if hand.scareMeter >= 5 and scareRng == 3 and not jumpscare_active:
+            if hand.scareMeter >= 7 and scareRng == 3 and not jumpscare_active:
                 # Jumpscare state 5, 3
                 trigger_jumpscare()
 
@@ -502,7 +504,7 @@ while running:
                             new_plant.watered = False
                             new_plant.mad_growth_pending = scary_spawn
                             plant_list[pot_number] = new_plant
-                            hand.scareMeter += 1
+                            hand.scareMeter += 2
                             
                         # Add Cactus
                         elif plant == 2:
@@ -510,6 +512,7 @@ while running:
                             new_plant.watered = False
                             new_plant.mad_growth_pending = scary_spawn
                             plant_list[pot_number] = new_plant
+                            hand.scareMeter += 1
 
                         # Add flower
                         else:
@@ -517,6 +520,7 @@ while running:
                             new_plant.watered = False
                             new_plant.mad_growth_pending = scary_spawn
                             plant_list[pot_number] = new_plant
+                            hand.scareMeter += 1
 
                 # Harvesting plants
                 if not spider_fed_this_click:
