@@ -1,3 +1,4 @@
 {
-    "codetogether.virtualCursorJoin": "ownVirtualCursor"
+    "codetogether.virtualCursorJoin": "ownVirtualCursor",
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }
