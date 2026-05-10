@@ -9,24 +9,24 @@ pygame.init()
 pygame.display.set_caption("Game of the Century")
 
 from pygame.locals import (
-    K_UP, # up arrow
-    K_DOWN, # down arrow
-    K_LEFT, # left arrow
-    K_RIGHT, # right arrow
-    K_ESCAPE, # escape
-    KEYDOWN, # key is pressed down
-    QUIT, # X button pressed
+    K_UP,
+    K_DOWN,
+    K_LEFT,
+    K_RIGHT,
+    K_ESCAPE,
+    KEYDOWN,
+    QUIT,
     MOUSEBUTTONDOWN,
 )
 
 class Hand:
+
     def __init__(self, satisfication, scareMeter):
         self.satisfication = satisfication
         self.scareMeter = scareMeter
         self.pos = pygame.Vector2(pygame.mouse.get_pos())
 
-        # Hand Image
-        self.image = pygame.image.load("assets\hands1.png")
+        self.image = pygame.image.load(r"assets\hands\hands1.png")
         self.image = pygame.transform.scale(self.image, (75, 75))
 
     def update(self):
@@ -35,23 +35,8 @@ class Hand:
     def addSatisfication(self, added):
         self.satisfication = min(100, self.satisfication + added)
 
-    """
-    def handVisualChange(stage):
-        #Changes the visuals of the pot
-        stage_change = {0:"assets\hands1.png", 1:"assets\hands2.png", 2:"assets\hands3.png"}
-        self.image = pygame.image.load(stage_change)
-        self.image = pygame.transform.scale(self.image, (150, 150))
-    """
 
-""" #Potentially makea later
-def blit_images(window):
-    # Window is the pygame screen
-    screen.blit(hand.image, hand.pos)
-    screen.blit(stats_panel, (0, 400))
-    screen.blit(Pot1, )
-"""
-
-# constants
+# Constants
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
@@ -62,101 +47,145 @@ background = pygame.transform.scale(
     (SCREEN_WIDTH, SCREEN_HEIGHT),
 )
 
-
 table = pygame.transform.scale(pygame.image.load(r"assets\table.png"), (800, 200))
+watercan1_image = pygame.image.load(r"assets\watercan\watercan1.png")
+watercan1_image = pygame.transform.scale(watercan1_image, (100, 100))
+watercan1_rect = watercan1_image.get_rect(topleft=(644, 430))
+watercan1_image_active = True
+watercan_target_area = pygame.Rect(644, 430, 100, 100)
 
-hand = Hand((50), 0)
+hands_watercan_image = pygame.image.load(r"assets\hands\hands_watercan1.png")
+hands_watercan_image = pygame.transform.scale(hands_watercan_image, (110, 110))
+hands_watercan_rect = hands_watercan_image.get_rect()
 
-# Initalizing pots
+waterdrop_image = pygame.image.load(r"assets\waterdrop.png")
+waterdrop_image = pygame.transform.scale(waterdrop_image, (30, 30))  # adjust size as needed
+
+hand = Hand(50, 0)
+holding_watercan = False
+
+# Initializing pots
 pot1 = Pot(0, 1)
 pot2 = Pot(0, 2)
 pot3 = Pot(0, 3)
 pot_list = [[pot1, False, 0], [pot2, False, 1], [pot3, False, 2]]
-plant_list = ["", "", ""] # Placeholder for numbers
+plant_list = ["", "", ""]
 
 pygame.mouse.set_visible(False)
 
 # Timers
 clock = pygame.time.Clock
-# Use a subtype so it doesn't collide with other USEREVENT uses
 GROWTH_TICK = USEREVENT + 1
+pygame.time.set_timer(GROWTH_TICK, 500)
 
-pygame.time.set_timer(GROWTH_TICK, 500)  # every 1000 ms push one event
+WATERING_ANIMATION = USEREVENT + 2
+pygame.time.set_timer(WATERING_ANIMATION, 100)
+
+watering_animation_active = False
+watering_frame = 0
+watering_images = []
+for i in range(1, 7):
+    img = pygame.image.load(fr"assets\hands\hands-watering{i}.png")
+    img = pygame.transform.scale(img, (110, 110))
+    watering_images.append(img)
 
 running = True
 while running:
 
-    for event in pygame.event.get(
-    ):  # every user input --> an event. This gets each of the events in a list.
+    for event in pygame.event.get():
         if event.type == KEYDOWN:
-            # Check if the user clicked the escape key
             if event.key == K_ESCAPE:
                 running = False
-        # The User closed the window
-        elif event.type == QUIT:  
+        elif event.type == QUIT:
             running = False
 
-        # Changes when plants are grown
         elif event.type == GROWTH_TICK:
             for plant in plant_list:
                 growthRng = random.randint(1, 3)
-                if plant != "" and growthRng == 1: # See if there is a plant or not
+                if plant != "" and growthRng == 1:
                     plant.stageChange()
 
-        # Mouse Clicks
+        elif event.type == WATERING_ANIMATION:
+            if watering_animation_active:
+                if watering_frame < len(watering_images):
+                    hand.image = watering_images[watering_frame]
+                    watering_frame += 1
+                else:
+                    hand.image = hands_watercan_image
+                    watering_animation_active = False
+                    watering_frame = 0
+
         elif event.type == MOUSEBUTTONDOWN:
-            # Left Clicks
             if event.button == 1:
+                # Planting
                 for pot in pot_list:
-                    # Hand is touching pot
                     if pot[0].rect.collidepoint(pygame.mouse.get_pos()) and not pot[1]:
                         plant = random.randint(1, 3)
                         pot_number = pot[2]
                         pot[1] = True
 
-                        # Add venus
                         if plant == 1:
                             new_plant = Venus(0, pot_number + 1)
                             plant_list[pot_number] = new_plant
-                            
-                        # Add Cactus
                         elif plant == 2:
                             new_plant = Cactus(0, pot_number + 1)
                             plant_list[pot_number] = new_plant
-
-                        # Add flower
                         else:
                             new_plant = Flower(0, pot_number + 1)
                             plant_list[pot_number] = new_plant
 
-                # Harvesting plants
+                # Harvesting
                 for plant in plant_list:
                     if plant != "" and plant.stage == 2:
-                        # Hand is touching plant
                         if plant.rect.collidepoint(pygame.mouse.get_pos()):
-                            plant_list[plant.potNumber - 1] = "" # Removes plant from list
+                            plant_list[plant.potNumber - 1] = ""
                             plant.kill()
                             hand.scareMeter += 1
-                    
-    
-    screen.blit(background, (0, 0))
 
-    
+                # Watering — only triggers once per stage
+                if holding_watercan and not watering_animation_active:
+                    for plant in plant_list:
+                        # After — inflate(x, y) expands the rect by x pixels wide and y pixels tall
+                        if plant != "" and plant.rect.inflate(40, 40).collidepoint(pygame.mouse.get_pos()): 
+                            if not plant.watered:
+                                plant.watered = True
+                                watering_animation_active = True
+                                watering_frame = 0
+                            break
+
+                # Returning watering can to table
+                if (not watercan1_image_active) and watercan_target_area.collidepoint(pygame.mouse.get_pos()):
+                    watercan1_image_active = True
+                    holding_watercan = False
+                    watering_animation_active = False
+                    hand.image = pygame.image.load(r"assets\hands\hands1.png")
+                    hand.image = pygame.transform.scale(hand.image, (75, 75))
+                # Picking up watering can
+                elif watercan1_rect.collidepoint(pygame.mouse.get_pos()):
+                    watercan1_image_active = False
+                    holding_watercan = True
+                    hand.image = hands_watercan_image
+
+    screen.blit(background, (0, 0))
     screen.blit(table, (0, 400))
 
-    # Displays Pots
     for pot in pot_list:
         screen.blit(pot[0].image, [pot[0].rect.x, pot[0].rect.bottom])
-    
 
     # Displays plants
     for plant in plant_list:
         if plant != "":
-            screen.blit(plant.image, [plant.rect.x, plant.rect.bottom]) 
+            screen.blit(plant.image, [plant.rect.x, plant.rect.bottom])
+            # Show waterdrop if plant needs watering and isn't fully grown
+            if not plant.watered and plant.stage < 2:
+                screen.blit(waterdrop_image, (plant.rect.x + plant.rect.width // 2 - 25, plant.rect.bottom + 100))
+
+    if watercan1_image_active:
+        screen.blit(watercan1_image, watercan1_rect)
 
     hand.update()
+    hands_watercan_rect.topleft = hand.pos
     screen.blit(hand.image, hand.pos)
     pygame.display.flip()
-    
+
 pygame.quit()
-    
